@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const _ = require('underscore');
 
+let DomoModel = {};
+
 const setName = (name) => _.escape(name).trim();
 
 const DomoSchema = new mongoose.Schema({
@@ -11,6 +13,11 @@ const DomoSchema = new mongoose.Schema({
     set: setName,
   },
   age: {
+    type: Number,
+    min: 0,
+    required: true,
+  },
+  lifeSavings: {
     type: Number,
     min: 0,
     required: true,
@@ -29,7 +36,26 @@ const DomoSchema = new mongoose.Schema({
 DomoSchema.statics.toAPI = (doc) => ({
   name: doc.name,
   age: doc.age,
+  lifeSavings: doc.lifeSavings,
+  _id: doc._id,
 });
 
-const DomoModel = mongoose.model('Domo', DomoSchema);
+DomoSchema.statics.findByOwner = (ownerId, callback) => {
+  const search = {
+    owner: ownerId,
+  };
+
+  return DomoModel.find(search)
+    .select('name age lifeSavings')
+    .lean()
+    .exec(callback);
+};
+
+// helper for deleting domos by id / owner
+DomoSchema.statics.deleteByOwnerAndId = (ownerId, domoId) => DomoModel.deleteOne({
+  _id: domoId,
+  owner: ownerId,
+}).exec();
+
+DomoModel = mongoose.model('Domo', DomoSchema);
 module.exports = DomoModel;
